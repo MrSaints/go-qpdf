@@ -6,6 +6,7 @@ package main
 */
 import "C"
 import "fmt"
+import "errors"
 
 type QPDF struct {
 	qpdfdata C.qpdf_data
@@ -21,10 +22,27 @@ func Init() *QPDF {
 	return qpdf
 }
 
+func (q *QPDF) GC() {
+	C.qpdf_cleanup(&q.qpdfdata)
+}
+
+func (q *QPDF) HasError() bool {
+	if C.qpdf_has_error(q.qpdfdata) == C.QPDF_TRUE {
+		return true
+	}
+	return false
+}
+
+func (q *QPDF) LastError() error {
+	err := C.qpdf_get_error(q.qpdfdata)
+	full := C.qpdf_get_error_full_text(q.qpdfdata, err)
+	return errors.New(C.GoString(full))
+}
+
 func (q *QPDF) Open(fn string) error {
 	err := C.qpdf_read(q.qpdfdata, C.CString(fn), nil)
-	if err != 0 {
-		return fmt.Errorf("error reading input PDF file, code: %+v", err)
+	if err != C.QPDF_SUCCESS {
+		return q.LastError()
 	}
 	return nil
 }
@@ -32,7 +50,7 @@ func (q *QPDF) Open(fn string) error {
 func (q *QPDF) SetOutput(fn string) error {
 	err := C.qpdf_init_write(q.qpdfdata, C.CString(fn))
 	if err != C.QPDF_SUCCESS {
-		return fmt.Errorf("error creating output PDF file, code: %+v", err)
+		return q.LastError()
 	}
 	return nil
 }
@@ -40,7 +58,7 @@ func (q *QPDF) SetOutput(fn string) error {
 func (q *QPDF) Write() error {
 	err := C.qpdf_write(q.qpdfdata)
 	if err != C.QPDF_SUCCESS {
-		return fmt.Errorf("error creating output PDF file, code: %+v", err)
+		return q.LastError()
 	}
 	return nil
 }
@@ -53,6 +71,8 @@ func main() {
 	fmt.Printf("QPDF Version: %s\n", Version())
 
 	qpdf := Init()
+	defer qpdf.GC()
+
 	err := qpdf.Open("test.pdf")
 	if err != nil {
 		panic(err)
@@ -68,6 +88,10 @@ func main() {
 	err = qpdf.Write()
 	if err != nil {
 		panic(err)
+	}
+
+	if qpdf.HasError() {
+		panic(qpdf.LastError())
 	}
 
 	fmt.Println("Linearized PDF!")
