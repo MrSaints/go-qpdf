@@ -1,12 +1,17 @@
 package main
 
 /*
+#include <stdlib.h>
 #include <qpdf/qpdf-c.h>
 #cgo pkg-config: libqpdf
 */
 import "C"
-import "fmt"
-import "errors"
+
+import (
+	"errors"
+	"fmt"
+	"unsafe"
+)
 
 type QPDF struct {
 	qpdfdata C.qpdf_data
@@ -40,7 +45,9 @@ func (q *QPDF) LastError() error {
 }
 
 func (q *QPDF) Open(fn string) error {
-	err := C.qpdf_read(q.qpdfdata, C.CString(fn), nil)
+	c_fn := C.CString(fn)
+	defer C.free(unsafe.Pointer(c_fn))
+	err := C.qpdf_read(q.qpdfdata, c_fn, nil)
 	if err != C.QPDF_SUCCESS {
 		return q.LastError()
 	}
@@ -48,7 +55,9 @@ func (q *QPDF) Open(fn string) error {
 }
 
 func (q *QPDF) SetOutput(fn string) error {
-	err := C.qpdf_init_write(q.qpdfdata, C.CString(fn))
+	c_fn := C.CString(fn)
+	defer C.free(unsafe.Pointer(c_fn))
+	err := C.qpdf_init_write(q.qpdfdata, c_fn)
 	if err != C.QPDF_SUCCESS {
 		return q.LastError()
 	}
