@@ -82,9 +82,9 @@ func (q *QPDF) LastError() error {
 // Methods to manipulate the data can be called after the file is opened
 // with this method.
 func (q *QPDF) Open(fn string) error {
-	c_fn := C.CString(fn)
-	defer C.free(unsafe.Pointer(c_fn))
-	err := C.qpdf_read(q.qpdfdata, c_fn, nil)
+	cFn := C.CString(fn)
+	defer C.free(unsafe.Pointer(cFn))
+	err := C.qpdf_read(q.qpdfdata, cFn, nil)
 	if err != C.QPDF_SUCCESS {
 		return q.LastError()
 	}
@@ -95,9 +95,9 @@ func (q *QPDF) Open(fn string) error {
 // It initialises qpdf_data for write operations, and it prepares the target
 // file for PDF data to be written.
 func (q *QPDF) SetOutput(fn string) error {
-	c_fn := C.CString(fn)
-	defer C.free(unsafe.Pointer(c_fn))
-	err := C.qpdf_init_write(q.qpdfdata, c_fn)
+	cFn := C.CString(fn)
+	defer C.free(unsafe.Pointer(cFn))
+	err := C.qpdf_init_write(q.qpdfdata, cFn)
 	if err != C.QPDF_SUCCESS {
 		return q.LastError()
 	}
